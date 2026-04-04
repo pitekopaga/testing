@@ -26,7 +26,7 @@ The AI did not ask what the function should do when one color is valid and the o
 
 The AI did not test performance. Not relevant for this simple function, but for a real accessibility tool processing many color pairs, I would add a test that ensures the function runs quickly.
 
-## Bug Classification per Reading 2
+## Bug Classification
 
 The issues I identified in my function fall into two categories from the slides.
 
