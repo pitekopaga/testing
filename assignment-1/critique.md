@@ -22,6 +22,16 @@ The AI did not ask what the function should do when one color is valid and the o
 
 The AI did not test performance. Not relevant for this simple function, but for a real accessibility tool processing many color pairs, I would add a test that ensures the function runs quickly.
 
+## Bug Classification per Reading 2
+
+The issues I identified in my function fall into two categories from the slides.
+
+Functional issue: The function fails on identical colors and invalid hex inputs. It does not do what it is supposed to do. A user relying on this function would get incorrect results. This is a functional bug.
+
+Requirements issue: The function currently has no specification for what counts as "distinguishable." The AI assumed perceptual distance, but my function only checks a hardcoded list. Without clear requirements, I cannot say whether the function is correct or not. This is a requirements bug.
+
+Neither issue is a design issue. The code is simple and readable. The problem is that it does not meet requirements because the requirements do not exist.
+
 ## Summary
 
 The AI generated a reasonable starting set of test cases. It understood the domain and identified edge cases like identical colors and red-green pairs. But it assumed a level of sophistication my function does not yet have. The critique process revealed that my function needs input validation, proper handling of identical colors, and clearer documentation of its limitations. The AI is good at brainstorming test ideas. The human is needed to match those ideas to what the code actually does.
