@@ -10,6 +10,10 @@ def is_distinguishable(color1, color2):
         return False
     return True
 
+@app.route('/')
+def home():
+    return "Colorblind API is running. Use POST /check with JSON body containing color1 and color2."
+
 @app.route('/check', methods=['POST'])
 def check():
     data = request.get_json()
