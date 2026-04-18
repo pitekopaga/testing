@@ -1,8 +1,7 @@
-import pytest
 import sys
 import os
+sys.path.insert(0, '/app')
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../backend')))
 from app import is_distinguishable
 
 def test_red_vs_green():
@@ -21,6 +20,5 @@ def test_case_insensitivity():
     assert is_distinguishable("#ff0000", "#00ff00") == False
 
 def test_invalid_hex_format():
-    # Current function does not validate, but test documents the expectation
     result = is_distinguishable("invalid", "#FF0000")
-    assert result in [True, False]  # Placeholder until validation is added
+    assert result in [True, False]
