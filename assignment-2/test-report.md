@@ -18,3 +18,6 @@ I added tests for green vs green and case insensitivity. The AI missed those.
 
 ## Assessment
 AI-generated tests are a good starting point but miss edge cases and assume functionality that may not exist. Human review is essential.
+
+## Peer Feedback and Future Improvements
+A peer reviewer noted that the current function only handles exact hex matches and does not distinguish between similar shades. He suggested moving to a numerical approach like RGB distance or perceptual color spaces such as LAB. I agree with this feedback. For Assignment 2, I kept the mock simple per the reading's guidance to hardcode responses. In a future iteration, I would implement perceptual distance calculations to handle similar colors and expand the function to cover additional types of colorblindness beyond red-green.
