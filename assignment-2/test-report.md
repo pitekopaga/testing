@@ -21,3 +21,6 @@ AI-generated tests are a good starting point but miss edge cases and assume func
 
 ## Peer Feedback and Future Improvements
 A peer reviewer noted that the current function only handles exact hex matches and does not distinguish between similar shades. He suggested moving to a numerical approach like RGB distance or perceptual color spaces such as LAB. I agree with this feedback. For Assignment 2, I kept the mock simple per the reading's guidance to hardcode responses. In a future iteration, I would implement perceptual distance calculations to handle similar colors and expand the function to cover additional types of colorblindness beyond red-green.
+
+## Professor Feedback
+Professor Ong noted that industry best practices for colorblindness include being "color-agnostic" and using differentiating patterns, not just color. I agree. My current function only compares hex codes. A future version would also check for or recommend patterns, icons, or labels to ensure accessibility even when colors are indistinguishable.
