@@ -1,5 +1,6 @@
 # Software Testing Portfolio 
 [![CI](https://github.com/pitekopaga/testing/actions/workflows/ci.yml/badge.svg)](https://github.com/pitekopaga/testing/actions/workflows/ci.yml)
+
 This repository contains explorations in software testing, test automation, and quality assurance.
 
 ## Contents
