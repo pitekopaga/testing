@@ -1,12 +1,11 @@
 # Colorblind API Mock Project
 
-A simple API that determines whether two hex color codes are distinguishable for someone with red-green colorblindness.
+A demonstration web API that checks whether two hex colors are distinguishable for someone with red-green colorblindness. This is a simplified demo with limited functionality.
 
 ## Prerequisites
 
 - Docker installed on your machine
 - Git (to clone the repository)
-- curl (for testing, or use a REST client like Postman)
 
 ## Getting Started
 
@@ -17,19 +16,23 @@ git clone https://github.com/pitekopaga/testing.git
 cd testing/mock-project
 ```
 
-## Step 1: Start the API
+## Run the API
 
 ```bash
 docker compose up --build -d
 ```
 
-The API will run in the background. You do not need to keep a terminal open.
+The API will run in the background.
 
-## Step 2: Test the API manually
+## Open the Web Interface
 
-Run the following commands one at a time.
+Open your browser and go to: `http://localhost:5000`
 
-### Health check
+You will see a web page where you can enter two hex colors and click "Check". The page will tell you whether the colors are distinguishable according to this simplified demo.
+
+## Test the API manually with curl (optional)
+
+Health check:
 
 ```bash
 curl http://localhost:5000/health
@@ -37,7 +40,7 @@ curl http://localhost:5000/health
 
 Expected output: `{"status":"ok"}`
 
-### Red vs Green (should return false)
+Red vs Green (should return false):
 
 ```bash
 curl -X POST http://localhost:5000/check -H "Content-Type: application/json" -d '{"color1": "#FF0000", "color2": "#00FF00"}'
@@ -45,7 +48,7 @@ curl -X POST http://localhost:5000/check -H "Content-Type: application/json" -d 
 
 Expected output: `{"distinguishable":false}`
 
-### Red vs Blue (should return true)
+Red vs Blue (should return true):
 
 ```bash
 curl -X POST http://localhost:5000/check -H "Content-Type: application/json" -d '{"color1": "#FF0000", "color2": "#0000FF"}'
@@ -53,15 +56,15 @@ curl -X POST http://localhost:5000/check -H "Content-Type: application/json" -d 
 
 Expected output: `{"distinguishable":true}`
 
-### Missing parameters (should return error)
+Missing parameters (should return error):
 
 ```bash
-curl -X POST http://localhost:5000/check -H "Content-Type: application/json" -d '{"color1": "#FF0000"}'
+curl -X POST http://localhost:5000/check -H "Content-Type": application/json" -d '{"color1": "#FF0000"}'
 ```
 
 Expected output: `{"error":"Missing color parameters"}` with HTTP 400 status.
 
-## Step 3: Run automated tests
+## Run Automated Tests
 
 Unit tests:
 
@@ -75,20 +78,12 @@ Integration tests:
 docker compose exec api pytest integration_tests/ -v
 ```
 
-## Step 4: Stop the API
+## Stop the API
 
 ```bash
 docker compose down
 ```
 
-## API Endpoints
+## Limitations
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/` | Homepage with instructions |
-| GET | `/health` | Health check |
-| POST | `/check` | Takes `color1` and `color2` as hex codes, returns `distinguishable` (true/false) |
-
-## Troubleshooting
-
-If `curl` is not found, install it with `sudo apt install curl` (Ubuntu) or use a REST client like Postman. If the API does not start, make sure port 5000 is not already in use.
+This is a simplified demonstration. The current version only knows that pure red (#FF0000) and pure green (#00FF00) are indistinguishable, and that pure red and pure blue (#0000FF) are distinguishable. For all other color pairs, it assumes they are distinguishable. A real implementation would use perceptual distance algorithms.
