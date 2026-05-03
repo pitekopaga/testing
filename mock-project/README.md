@@ -6,6 +6,7 @@ A simple API that determines whether two hex color codes are distinguishable for
 
 - Docker installed on your machine
 - Git (to clone the repository)
+- curl (for testing, or use a REST client like Postman)
 
 ## Getting Started
 
@@ -16,43 +17,53 @@ git clone https://github.com/pitekopaga/testing.git
 cd testing/mock-project
 ```
 
-## Running the API
+## Step 1: Start the API
 
-Start the API server:
+Open a terminal and run:
 
 ```bash
 docker compose up --build -d
 ```
 
-The API will be available at `http://localhost:5000`.
+Keep this terminal open. Do not close it.
 
-## Testing the API manually
+## Step 2: Open another terminal for testing
 
-Health check:
+Open a second terminal. Do not close the first one. Run the following commands one at a time.
+
+### Health check
 
 ```bash
 curl http://localhost:5000/health
 ```
 
-Red vs Green (should return false):
+Expected output: `{"status":"ok"}`
+
+### Red vs Green (should return false)
 
 ```bash
 curl -X POST http://localhost:5000/check -H "Content-Type: application/json" -d '{"color1": "#FF0000", "color2": "#00FF00"}'
 ```
 
-Red vs Blue (should return true):
+Expected output: `{"distinguishable":false}`
+
+### Red vs Blue (should return true)
 
 ```bash
 curl -X POST http://localhost:5000/check -H "Content-Type: application/json" -d '{"color1": "#FF0000", "color2": "#0000FF"}'
 ```
 
-Missing parameters (should return error):
+Expected output: `{"distinguishable":true}`
+
+### Missing parameters (should return error)
 
 ```bash
 curl -X POST http://localhost:5000/check -H "Content-Type: application/json" -d '{"color1": "#FF0000"}'
 ```
 
-## Running Automated Tests
+Expected output: `{"error":"Missing color parameters"}` with HTTP 400 status.
+
+## Step 3: Run automated tests
 
 Unit tests:
 
@@ -66,7 +77,9 @@ Integration tests:
 docker compose exec api pytest integration_tests/ -v
 ```
 
-## Stopping the API
+## Step 4: Stop the API
+
+Go back to the first terminal and press `Ctrl + C`, then run:
 
 ```bash
 docker compose down
@@ -76,5 +89,10 @@ docker compose down
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
+| GET | `/` | Homepage with instructions |
 | GET | `/health` | Health check |
 | POST | `/check` | Takes `color1` and `color2` as hex codes, returns `distinguishable` (true/false) |
+
+## Troubleshooting
+
+If `curl` is not found, install it with `sudo apt install curl` (Ubuntu) or use a REST client like Postman. If the API does not start, make sure port 5000 is not already in use.
