@@ -1,4 +1,6 @@
 # Colorblind API Mock Project
+# Software Testing Portfolio 
+[![CI](https://github.com/pitekopaga/testing/actions/workflows/ci.yml/badge.svg)](https://github.com/pitekopaga/testing/actions/workflows/ci.yml)
 
 A simple API that determines whether two hex color codes are distinguishable for someone with red-green colorblindness.
 
