@@ -24,7 +24,7 @@ jobs:
     - name: Run unit tests
       run: |
         cd mock-project
-        docker compose exec api pytest tests/ -v
+        docker compose exec api pytest unit_tests/ -v
     
     - name: Stop containers
       run: |

@@ -69,7 +69,7 @@ Expected output: `{"error":"Missing color parameters"}` with HTTP 400 status.
 Unit tests:
 
 ```bash
-docker compose exec api pytest tests/ -v
+docker compose exec api pytest unit_tests/ -v
 ```
 
 Integration tests:

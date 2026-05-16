@@ -1,5 +1,5 @@
 # Colorblind API Mock Project
-# Software Testing Portfolio 
+
 [![CI](https://github.com/pitekopaga/testing/actions/workflows/ci.yml/badge.svg)](https://github.com/pitekopaga/testing/actions/workflows/ci.yml)
 
 A simple API that determines whether two hex color codes are distinguishable for someone with red-green colorblindness.
@@ -25,7 +25,7 @@ cd testing/mock-project
 docker compose up --build -d
 ```
 
-The API will run in the background. You do not need to keep a terminal open.
+The API will run in the background.
 
 ## Step 2: Test the API manually
 
@@ -45,12 +45,24 @@ Expected output: `{"status":"ok"}`
 curl -X POST http://localhost:5000/check -H "Content-Type: application/json" -d '{"color1": "#FF0000", "color2": "#00FF00"}'
 ```
 
+For Windows CMD, use:
+
+```bash
+curl -X POST http://localhost:5000/check -H "Content-Type: application/json" -d "{\"color1\": \"#FF0000\", \"color2\": \"#00FF00\"}"
+```
+
 Expected output: `{"distinguishable":false}`
 
 ### Red vs Blue (should return true)
 
 ```bash
 curl -X POST http://localhost:5000/check -H "Content-Type: application/json" -d '{"color1": "#FF0000", "color2": "#0000FF"}'
+```
+
+For Windows CMD, use:
+
+```bash
+curl -X POST http://localhost:5000/check -H "Content-Type: application/json" -d "{\"color1\": \"#FF0000\", \"color2\": \"#0000FF\"}"
 ```
 
 Expected output: `{"distinguishable":true}`
@@ -61,6 +73,12 @@ Expected output: `{"distinguishable":true}`
 curl -X POST http://localhost:5000/check -H "Content-Type: application/json" -d '{"color1": "#FF0000"}'
 ```
 
+For Windows CMD, use:
+
+```bash
+curl -X POST http://localhost:5000/check -H "Content-Type": "application/json" -d "{\"color1\": \"#FF0000\"}"
+```
+
 Expected output: `{"error":"Missing color parameters"}` with HTTP 400 status.
 
 ## Step 3: Run automated tests
@@ -68,7 +86,7 @@ Expected output: `{"error":"Missing color parameters"}` with HTTP 400 status.
 Unit tests:
 
 ```bash
-docker compose exec api pytest tests/ -v
+docker compose exec api pytest unit_tests/ -v
 ```
 
 Integration tests:
