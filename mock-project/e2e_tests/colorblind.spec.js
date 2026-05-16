@@ -2,7 +2,8 @@ const { test, expect } = require('@playwright/test');
 
 test('homepage loads and shows title', async ({ page }) => {
   await page.goto('http://localhost:5000');
-  await expect(page).toHaveTitle(/Colorblindness Checker Demo/);
+  await expect(page).toHaveTitle(/Color Vision Test/);
+  await expect(page.locator('h1')).toContainText('Color Vision Diagnostic Test');
 });
 
 test('health endpoint returns ok', async ({ request }) => {
@@ -11,37 +12,62 @@ test('health endpoint returns ok', async ({ request }) => {
   expect(await response.json()).toEqual({ status: 'ok' });
 });
 
-test('red vs green returns false', async ({ request }) => {
-  const response = await request.post('http://localhost:5000/check', {
-    data: { color1: '#FF0000', color2: '#00FF00' }
-  });
-  expect(response.status()).toBe(200);
-  expect(await response.json()).toEqual({ distinguishable: false });
-});
-
-test('red vs blue returns true', async ({ request }) => {
-  const response = await request.post('http://localhost:5000/check', {
-    data: { color1: '#FF0000', color2: '#0000FF' }
-  });
-  expect(response.status()).toBe(200);
-  expect(await response.json()).toEqual({ distinguishable: true });
-});
-
-test('full user flow via web interface', async ({ page }) => {
+test('user can submit answers and complete the test', async ({ page }) => {
   await page.goto('http://localhost:5000');
   
-  // Fill in colors
-  await page.fill('#color1', '#FF0000');
-  await page.fill('#color2', '#00FF00');
+  // Get total number of plates from the progress indicator
+  const totalText = await page.locator('p').first().textContent();
+  const totalMatch = totalText.match(/of (\d+)/);
+  const totalPlates = totalMatch ? parseInt(totalMatch[1]) : 10;
   
-  // Click check button
-  await page.click('button');
+  // Submit answers for all plates
+  for (let i = 0; i < totalPlates; i++) {
+    // Enter a guess (using 0 as default)
+    await page.fill('input[name="answer"]', '0');
+    await page.click('button[type="submit"]');
+    await page.waitForLoadState('networkidle');
+  }
   
-  // Wait for result and verify
-  await expect(page.locator('.result')).toContainText('NOT DISTINGUISHABLE');
+  // Should reach results page
+  await expect(page.locator('h2')).toContainText('Your Color Blind Test Result');
+});
+
+test('results page shows cone scores', async ({ page }) => {
+  // Complete the test first
+  await page.goto('http://localhost:5000');
   
-  // Change to red and blue
-  await page.fill('#color2', '#0000FF');
-  await page.click('button');
-  await expect(page.locator('.result')).toContainText('DISTINGUISHABLE');
+  const totalText = await page.locator('p').first().textContent();
+  const totalMatch = totalText.match(/of (\d+)/);
+  const totalPlates = totalMatch ? parseInt(totalMatch[1]) : 10;
+  
+  for (let i = 0; i < totalPlates; i++) {
+    await page.fill('input[name="answer"]', '0');
+    await page.click('button[type="submit"]');
+    await page.waitForLoadState('networkidle');
+  }
+  
+  // Verify results page has score elements
+  await expect(page.locator('.score').first()).toBeVisible();
+});
+
+test('reset button clears results and restarts test', async ({ page }) => {
+  await page.goto('http://localhost:5000');
+  
+  // Complete the test
+  const totalText = await page.locator('p').first().textContent();
+  const totalMatch = totalText.match(/of (\d+)/);
+  const totalPlates = totalMatch ? parseInt(totalMatch[1]) : 10;
+  
+  for (let i = 0; i < totalPlates; i++) {
+    await page.fill('input[name="answer"]', '0');
+    await page.click('button[type="submit"]');
+    await page.waitForLoadState('networkidle');
+  }
+  
+  // Click reset button
+  await page.click('button[type="submit"]');
+  
+  // Should be back to first plate
+  await expect(page.locator('h1')).toContainText('Color Vision Diagnostic Test');
+  await expect(page.locator('input[name="answer"]')).toBeVisible();
 });
