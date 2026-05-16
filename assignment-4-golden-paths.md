@@ -2,26 +2,30 @@
 
 ## What users pay for
 
-Users pay for accurate colorblindness diagnosis. The most valuable scenario is a user completing the full test and receiving a reliable result.
+Users pay for an accurate color blindness diagnosis. The most valuable scenario is a user completing the full test and receiving a reliable result that matches clinical tests.
 
-## Golden Path 1: Quick check via API
+## Golden Path 1: Complete diagnostic test
 
-A developer integrates the API into their workflow. They send a POST request to `/check` with two hex colors and receive a true/false response.
+A user opens the web application, answers all test plates by typing the numbers they see (or 0 if they see nothing), and receives a diagnosis with cone percentage scores.
 
-## Golden Path 2: Manual testing via web interface
+**Why this is valuable:** This is the core value proposition. Without an accurate diagnosis, the test has no value.
 
-A non-technical user opens the web page, enters two hex colors, clicks Check, and reads the result.
+## Golden Path 2: Retaking the test
 
-## Golden Path 3: Health monitoring
+A user completes the test, receives a result, and clicks "Take Test Again" to start a fresh session with randomized plates.
 
-A DevOps engineer calls `/health` to verify the service is running before routing traffic.
+**Why this is valuable:** Users may want to verify their results or test again after the variance disclaimer. This also demonstrates that the test is not deterministic.
 
-## Why these are valuable
+## Golden Path 3: Health check for operations
 
-The API check is the core function. The web interface makes it accessible to non-developers. The health endpoint is required for production reliability.
+A DevOps engineer calls the `/health` endpoint to verify the service is running before routing traffic.
+
+**Why this is valuable:** For enterprise deployment, reliability monitoring is essential. Users cannot take the test if the service is down.
 
 ## E2E tests covering these paths
 
-- API check covered by Playwright API tests
-- Web interface covered by browser-based Playwright test
-- Health endpoint covered by API test
+| Golden Path | E2E Test |
+|-------------|----------|
+| Complete diagnostic test | `user can submit answers and complete the test` |
+| Retaking the test | `reset button clears results and restarts test` |
+| Health check | `health endpoint returns ok` |
