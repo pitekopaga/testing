@@ -1,3 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  unit-and-integration-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Build and start containers
+      run: |
+        cd mock-project
+        docker compose up --build -d
+    
+    - name: Wait for API
+      run: sleep 10
+    
+    - name: Run unit tests
+      run: |
+        cd mock-project
+        docker compose exec api pytest unit_tests/ -v
+    
+    - name: Run integration tests
+      run: |
+        cd mock-project
+        docker compose exec api pytest integration_tests/ -v
+    
+    - name: Stop containers
+      run: |
+        cd mock-project
+        docker compose down
+
   e2e-tests:
     runs-on: ubuntu-latest
     
