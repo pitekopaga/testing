@@ -2,6 +2,14 @@
 
 A web-based Ishihara-style color vision test that diagnoses Protan (red deficiency), Deutan (green deficiency), and Tritan (blue deficiency) color blindness.
 
+## Quick Start (for beginners)
+
+1. Install Docker from https://docs.docker.com/get-docker/
+2. Open a terminal in this folder (`mock-project`)
+3. Run: `docker compose up --build -d`
+4. Open your browser to: `http://localhost:5000`
+5. To stop: `docker compose down`
+
 ## Prerequisites
 
 - Docker installed on your machine
