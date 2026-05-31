@@ -1,82 +1,89 @@
-from flask import Flask, render_template_string, session, redirect, url_for, request
+from flask import Flask, render_template_string, session, redirect, url_for, request, Response
 import random
 import psutil
+import json
+import os
+from datetime import datetime
+from collections import Counter
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'
 
-# Number patterns (5x5 grid)
+RESULTS_FILE = 'test_results.json'
+
+def save_result(username, diagnosis, scores):
+    """Save a user's test result to a JSON file."""
+    data = {}
+    if os.path.exists(RESULTS_FILE):
+        with open(RESULTS_FILE, 'r') as f:
+            data = json.load(f)
+    
+    if username not in data:
+        data[username] = []
+    
+    data[username].append({
+        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'diagnosis': diagnosis,
+        'red_score': scores.get('red', 0),
+        'green_score': scores.get('green', 0),
+        'blue_score': scores.get('blue', 0)
+    })
+    
+    with open(RESULTS_FILE, 'w') as f:
+        json.dump(data, f, indent=2)
+
+def get_consistency(username):
+    """Calculate consistency score for a user based on past results."""
+    if not os.path.exists(RESULTS_FILE):
+        return None
+    
+    with open(RESULTS_FILE, 'r') as f:
+        data = json.load(f)
+    
+    if username not in data:
+        return None
+    
+    results = data[username]
+    if len(results) < 2:
+        return {'message': 'Take the test at least twice to see consistency', 'total_sessions': len(results)}
+    
+    # Compare the actual diagnosis strings
+    diagnoses = [r['diagnosis'] for r in results]
+    most_common = Counter(diagnoses).most_common(1)[0][0]
+    consistency_percent = (diagnoses.count(most_common) / len(diagnoses)) * 100
+    
+    return {
+        'total_sessions': len(results),
+        'consistency_percent': round(consistency_percent, 1),
+        'primary_diagnosis': most_common,
+        'all_diagnoses': diagnoses
+    }
+
+def get_all_results(username):
+    """Get all results for a user for CSV export."""
+    if not os.path.exists(RESULTS_FILE):
+        return []
+    
+    with open(RESULTS_FILE, 'r') as f:
+        data = json.load(f)
+    
+    if username not in data:
+        return []
+    
+    return data[username]
+
+# Number patterns
 PATTERNS = {
-    0: [
-        [0,1,1,1,0],
-        [1,0,0,0,1],
-        [1,0,0,0,1],
-        [1,0,0,0,1],
-        [0,1,1,1,0]
-    ],
-    1: [
-        [0,0,1,0,0],
-        [0,1,1,0,0],
-        [0,0,1,0,0],
-        [0,0,1,0,0],
-        [0,1,1,1,0]
-    ],
-    2: [
-        [0,1,1,1,0],
-        [1,0,0,0,1],
-        [0,0,1,1,0],
-        [0,1,0,0,0],
-        [1,1,1,1,1]
-    ],
-    3: [
-        [0,1,1,1,0],
-        [1,0,0,0,1],
-        [0,0,1,1,0],
-        [1,0,0,0,1],
-        [0,1,1,1,0]
-    ],
-    4: [
-        [1,0,0,0,1],
-        [1,0,0,0,1],
-        [1,1,1,1,1],
-        [0,0,0,0,1],
-        [0,0,0,0,1]
-    ],
-    5: [
-        [1,1,1,1,1],
-        [1,0,0,0,0],
-        [1,1,1,1,0],
-        [0,0,0,0,1],
-        [1,1,1,1,0]
-    ],
-    6: [
-        [0,1,1,1,0],
-        [1,0,0,0,0],
-        [1,1,1,1,0],
-        [1,0,0,0,1],
-        [0,1,1,1,0]
-    ],
-    7: [
-        [1,1,1,1,1],
-        [0,0,0,0,1],
-        [0,0,1,1,0],
-        [0,1,0,0,0],
-        [1,0,0,0,0]
-    ],
-    8: [
-        [0,1,1,1,0],
-        [1,0,0,0,1],
-        [0,1,1,1,0],
-        [1,0,0,0,1],
-        [0,1,1,1,0]
-    ],
-    9: [
-        [0,1,1,1,0],
-        [1,0,0,0,1],
-        [0,1,1,1,1],
-        [0,0,0,0,1],
-        [0,1,1,1,0]
-    ],
+    0: [[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],
+    1: [[0,0,1,0,0],[0,1,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,1,1,1,0]],
+    2: [[0,1,1,1,0],[1,0,0,0,1],[0,0,1,1,0],[0,1,0,0,0],[1,1,1,1,1]],
+    3: [[0,1,1,1,0],[1,0,0,0,1],[0,0,1,1,0],[1,0,0,0,1],[0,1,1,1,0]],
+    4: [[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,1],[0,0,0,0,1],[0,0,0,0,1]],
+    5: [[1,1,1,1,1],[1,0,0,0,0],[1,1,1,1,0],[0,0,0,0,1],[1,1,1,1,0]],
+    6: [[0,1,1,1,0],[1,0,0,0,0],[1,1,1,1,0],[1,0,0,0,1],[0,1,1,1,0]],
+    7: [[1,1,1,1,1],[0,0,0,0,1],[0,0,1,1,0],[0,1,0,0,0],[1,0,0,0,0]],
+    8: [[0,1,1,1,0],[1,0,0,0,1],[0,1,1,1,0],[1,0,0,0,1],[0,1,1,1,0]],
+    9: [[0,1,1,1,0],[1,0,0,0,1],[0,1,1,1,1],[0,0,0,0,1],[0,1,1,1,0]],
 }
 
 def get_pattern(num):
@@ -94,21 +101,17 @@ def get_pattern(num):
 
 def make_plate(plate_type, number):
     if plate_type == 'protan':
-        # Protan - make it VERY hard for red-deficient
         base_red = random.randint(80, 110)
         base_green = random.randint(80, 110)
         bg = [base_red, base_green, random.randint(60, 90)]
         fg = [base_red + random.randint(-10, 10), base_green + random.randint(-10, 10), random.randint(60, 90)]
     elif plate_type == 'deutan':
-        # Deutan - medium difficulty
         bg = [random.randint(70, 100), random.randint(120, 150), random.randint(70, 100)]
         fg = [random.randint(120, 150), random.randint(40, 70), random.randint(70, 100)]
     elif plate_type == 'tritan':
-        # Tritan - VERY easy for normal vision (high contrast)
         bg = [120, 120, 120]
         fg = [40, 40, 200]
     else:
-        # Control - extremely easy
         bg = [60, 60, 60]
         fg = [220, 220, 220]
     
@@ -131,33 +134,37 @@ HTML = '''
     <title>Color Vision Test</title>
     <style>
         body { text-align: center; background: #1a1a2e; color: white; font-family: Arial; padding: 20px; }
-        canvas { background: #0f0f1a; border-radius: 20px; margin: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        canvas { background: #0f0f1a; border-radius: 20px; margin: 20px; }
         button { background: #e94560; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px; }
         button:hover { background: #ff6b8a; }
         input { padding: 10px; width: 100px; text-align: center; border-radius: 8px; border: none; font-size: 16px; }
         .progress { background: #2a2a3e; height: 8px; border-radius: 4px; margin: 20px 0; }
         .bar { background: #e94560; height: 8px; border-radius: 4px; width: 0%; }
-        .result-card { background: #16213e; padding: 25px; border-radius: 20px; margin-top: 20px; max-width: 500px; margin-left: auto; margin-right: auto; }
+        .result-card { background: #16213e; padding: 25px; border-radius: 20px; margin-top: 20px; max-width: 600px; margin-left: auto; margin-right: auto; }
         .score { font-size: 48px; font-weight: bold; margin: 10px; }
         .warning { background: #e94560; padding: 15px; border-radius: 10px; }
         .normal { background: #0f3460; padding: 15px; border-radius: 10px; }
         .instructions { background: #16213e; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
         .note { font-size: 12px; color: #888; margin-top: 20px; }
         h1 { color: #e94560; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
+        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #444; }
+        th { background: #0f0f1a; }
     </style>
 </head>
 <body>
     <h1>Color Vision Diagnostic Test</h1>
     {% if not done %}
     <div class="instructions">
-        <strong>Instructions:</strong> A number is hidden in the circle of dots. Type the number you see.<br>
+        <strong>Instructions:</strong> A number is hidden in the circle of dots.<br>
+        Type the number you see and press Enter, or click Submit.<br>
         If you do not see any number, click the <strong>No Number</strong> button.
     </div>
     
     <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #e94560; text-align: left;">
         <strong>⚠️ Disclaimer:</strong> This test is for informational and educational purposes only. 
         It is not a medical diagnosis. If you have concerns about your color vision, please consult 
-        an eye care professional. Results may vary and should not be used for official medical determinations.
+        an eye care professional.
     </div>
     
     <div class="progress"><div class="bar" style="width: {{ pct }}%"></div></div>
@@ -213,56 +220,50 @@ HTML = '''
         <p>{{ description }}</p>
         
         <div style="margin: 20px 0;">
-            <div>Blue Cone (Tritan)</div>
+            <div>Blue Cone</div>
             <div class="score">{{ blue_score }}%</div>
             <progress value="{{ blue_score }}" max="100" style="width:100%; height:20px;"></progress>
         </div>
         
         <div style="margin: 20px 0;">
-            <div>Green Cone (Deutan)</div>
+            <div>Green Cone</div>
             <div class="score">{{ green_score }}%</div>
             <progress value="{{ green_score }}" max="100" style="width:100%; height:20px;"></progress>
         </div>
         
         <div style="margin: 20px 0;">
-            <div>Red Cone (Protan)</div>
+            <div>Red Cone</div>
             <div class="score">{{ red_score }}%</div>
             <progress value="{{ red_score }}" max="100" style="width:100%; height:20px;"></progress>
         </div>
         
-        <div class="note">Note: Scores below 60% indicate a possible deficiency in that cone type.</div>
+        <div class="note">Note: Scores below 60% indicate a possible deficiency.</div>
         
-        <div style="margin: 20px 0;">
-            <button onclick="exportToCSV()" style="background: #28a745; margin-right: 10px;">Export Results to CSV</button>
+        <a href="/export-csv" download="color_vision_history.csv">
+            <button style="background: #28a745; margin: 10px;">Export All Results to CSV</button>
+        </a>
+        
+        {% if consistency %}
+        <div style="background: #2a2a3e; padding: 15px; border-radius: 10px; margin: 20px 0;">
+            <h3>Your History</h3>
+            <p>You have taken this test {{ consistency.total_sessions }} time(s).</p>
+            {% if consistency.consistency_percent %}
+            <p>Consistency: <strong>{{ consistency.consistency_percent }}%</strong></p>
+            <p>Most common diagnosis: <strong>{{ consistency.primary_diagnosis }}</strong></p>
+            <p>All diagnoses: {{ consistency.all_diagnoses|join(', ') }}</p>
+            {% else %}
+            <p>{{ consistency.message }}</p>
+            {% endif %}
         </div>
+        {% endif %}
         
-        <form method="POST" action="/reset" style="margin-top: 20px;">
+        <form method="POST" action="/reset" style="display: inline;">
             <button type="submit">Take Test Again</button>
         </form>
+        <form method="POST" action="/logout" style="display: inline;">
+            <button type="submit" style="background: #6c757d;">Exit</button>
+        </form>
     </div>
-    <script>
-        function exportToCSV() {
-            const redScore = {{ red_score }};
-            const greenScore = {{ green_score }};
-            const blueScore = {{ blue_score }};
-            const diagnosis = "{{ diagnosis }}";
-            
-            const csvContent = "data:text/csv;charset=utf-8," 
-                + "Cone Type,Score (%)\\n"
-                + "Red," + redScore + "\\n"
-                + "Green," + greenScore + "\\n"
-                + "Blue," + blueScore + "\\n"
-                + "Diagnosis," + diagnosis;
-            
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "color_vision_results.csv");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-    </script>
     {% endif %}
 </body>
 </html>
@@ -274,9 +275,43 @@ TRITAN_QUESTIONS = [2, 9, 4]
 CONTROL_QUESTIONS = [7, 0]
 
 @app.route('/', methods=['GET', 'POST'])
-def index():
+def login():
+    session.clear()
+    
+    if request.method == 'POST':
+        username = request.form.get('username')
+        if username:
+            session['username'] = username
+            return redirect(url_for('test'))
+    
+    return '''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Color Vision Test - Login</title>
+        <style>
+            body { text-align: center; background: #1a1a2e; color: white; font-family: Arial; padding: 50px; }
+            input, button { padding: 10px; margin: 10px; font-size: 16px; border-radius: 8px; }
+            button { background: #e94560; color: white; border: none; cursor: pointer; }
+        </style>
+    </head>
+    <body>
+        <h1>Color Vision Diagnostic Test</h1>
+        <form method="POST">
+            <input type="text" name="username" placeholder="Enter your name or email" required size="30">
+            <button type="submit">Start Test</button>
+        </form>
+        <p style="margin-top: 30px; font-size: 12px; color: #888;">Your results will be saved to track consistency over time.</p>
+    </body>
+    </html>
+    '''
+
+@app.route('/test', methods=['GET', 'POST'])
+def test():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
     if not session.get('initialized'):
-        session.clear()
         plates = []
         for q in PROTAN_QUESTIONS:
             plates.append(make_plate('protan', q))
@@ -292,10 +327,8 @@ def index():
         session['answers'] = []
         session['step'] = 0
         session['initialized'] = True
-        session.modified = True
     
     if request.method == 'POST':
-        # Handle the "No Number" button or regular number input
         if 'skip' in request.form:
             user_number = 0
         else:
@@ -317,7 +350,6 @@ def index():
             })
             session['answers'] = answers
             session['step'] = step + 1
-            session.modified = True
         
         if session.get('step', 0) >= len(plates):
             return redirect(url_for('result'))
@@ -373,12 +405,10 @@ def result():
     green_score = round((deutan_correct / max(deutan_total, 1)) * 100)
     blue_score = round((tritan_correct / max(tritan_total, 1)) * 100)
     
-    # Find the lowest score
     scores = {'red': red_score, 'green': green_score, 'blue': blue_score}
     min_type = min(scores, key=scores.get)
-    min_score = scores[min_type]
     
-    if min_score < 60:
+    if scores[min_type] < 60:
         if min_type == 'red':
             diagnosis = "Protan Color Blind"
             description = "You have a stronger deficiency in your red color cone, which means you have a type of red-green color blindness called Protan."
@@ -392,18 +422,58 @@ def result():
         diagnosis = "Normal Color Vision"
         description = "Your color vision appears normal within the range of this test."
     
+    username = session.get('username')
+    if username:
+        result_scores = {'red': red_score, 'green': green_score, 'blue': blue_score}
+        save_result(username, diagnosis, result_scores)
+        consistency = get_consistency(username)
+    else:
+        consistency = None
+    
     return render_template_string(HTML, 
         done=True, 
         red_score=red_score,
         green_score=green_score,
         blue_score=blue_score,
         diagnosis=diagnosis,
-        description=description)
+        description=description,
+        consistency=consistency)
+
+@app.route('/export-csv')
+def export_csv():
+    username = session.get('username')
+    if not username:
+        return redirect(url_for('login'))
+    
+    results = get_all_results(username)
+    if not results:
+        return "No results found", 404
+    
+    # Create CSV content
+    csv_lines = ["Timestamp,Diagnosis,Red Score (Protan),Green Score (Deutan),Blue Score (Tritan)"]
+    for r in results:
+        csv_lines.append(f"{r['timestamp']},{r['diagnosis']},{r['red_score']},{r['green_score']},{r['blue_score']}")
+    
+    csv_content = "\n".join(csv_lines)
+    
+    return Response(
+        csv_content,
+        mimetype="text/csv",
+        headers={"Content-disposition": f"attachment; filename=color_vision_history_{username}.csv"}
+    )
 
 @app.route('/reset', methods=['POST'])
 def reset():
+    session.pop('answers', None)
+    session.pop('step', None)
+    session.pop('plates', None)
+    session.pop('initialized', None)
+    return redirect(url_for('test'))
+
+@app.route('/logout', methods=['POST'])
+def logout():
     session.clear()
-    return redirect(url_for('index'))
+    return redirect(url_for('login'))
 
 @app.route('/health')
 def health():
@@ -411,7 +481,6 @@ def health():
 
 @app.route('/debug/stats')
 def debug_stats():
-    """Simple monitoring endpoint for operational health."""
     return {
         'status': 'ok',
         'cpu_percent': psutil.cpu_percent(interval=0.1),

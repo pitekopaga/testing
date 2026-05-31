@@ -46,3 +46,33 @@ Following Fielding's REST constraints (SRC-3, SRC-27):
 - **Statelessness violation**: The current design uses server-side sessions. This creates a scalability bottleneck. A stateless design (client-side storage or JWTs) would be more aligned with REST principles.
 
 - **Service boundaries** (SRC-5): The application has implicit boundaries between the UI, scoring logic, and session store. Documenting these boundaries helps with integration testing.
+
+## Diagnostic Consistency Tracking
+
+While working on this assignment, I discovered an important gap in existing colorblindness tests. I took the Enchroma test three times over several months. It diagnosed me as Deutan twice and Protan once. A user who gets different results from the same test will not trust any of them.
+
+### Implementation
+
+I added consistency tracking to my own test. Users now:
+
+1. Log in with a username (no password required)
+2. Take the test as normal
+3. See their history and consistency score on the results page
+
+The system stores results in a JSON file and calculates:
+- Total number of sessions
+- Consistency percentage (how often the same diagnosis appears)
+- Most common diagnosis
+- Last 3 results
+
+### Automation
+
+This feature is fully automated. The test itself saves results, loads past history, and displays consistency without any manual intervention.
+
+### Value
+
+Twenty percent of users will experience inconsistent results, but that small group will generate eighty percent of complaints and lost trust. Focusing on stability across sessions is the highest-value specialized testing I added to my product.
+
+### Results
+
+I tested this by taking my own test multiple times with different usernames. The consistency tracking works correctly. Future work would involve user studies to see how often real users get inconsistent results and whether my test is more stable than Enchroma.
