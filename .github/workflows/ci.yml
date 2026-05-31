@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Build and start containers
+      run: |
+        cd mock-project
+        docker compose up --build -d
+    
+    - name: Wait for API
+      run: sleep 10
+    
+    - name: Run unit tests
+      run: |
+        cd mock-project
+        docker compose exec api pytest unit_tests/ -v
+    
+    - name: Stop containers
+      run: |
+        cd mock-project
+        docker compose down
+
+  e2e-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    
+    - name: Install dependencies
+      run: |
+        cd mock-project
+        npm ci
+    
+    - name: Install Playwright browsers
+      run: |
+        cd mock-project
+        npx playwright install chromium
+    
+    - name: Start containers
+      run: |
+        cd mock-project
+        docker compose up --build -d
+    
+    - name: Wait for API to be ready
+      run: |
+        sleep 10
+        curl --retry 5 --retry-delay 2 --retry-connrefused http://localhost:5000/health || true
+    
+    - name: Run Playwright tests
+      run: |
+        cd mock-project
+        npx playwright test
+    
+    - name: Stop containers
+      run: |
+        cd mock-project
+        docker compose down
+
+  load-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        cd mock-project
+        pip install locust
+    
+    - name: Start containers
+      run: |
+        cd mock-project
+        docker compose up --build -d
+    
+    - name: Wait for API to be ready
+      run: |
+        sleep 10
+        curl --retry 5 --retry-delay 2 --retry-connrefused http://localhost:5000/health || true
+    
+    - name: Run load test
+      run: |
+        cd mock-project
+        locust -f load_tests/locustfile.py --headless -u 5 -r 1 --run-time 30s --host=http://localhost:5000
+    
+    - name: Stop containers
+      run: |
+        cd mock-project
+        docker compose down
