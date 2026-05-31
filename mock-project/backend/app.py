@@ -94,7 +94,6 @@ def get_pattern(num):
 def make_plate(plate_type, number):
     if plate_type == 'protan':
         # Protan - make it VERY hard for red-deficient
-        # Almost identical red and green values
         base_red = random.randint(80, 110)
         base_green = random.randint(80, 110)
         bg = [base_red, base_green, random.randint(60, 90)]
@@ -151,14 +150,24 @@ HTML = '''
     {% if not done %}
     <div class="instructions">
         <strong>Instructions:</strong> A number is hidden in the circle of dots. Type the number you see.<br>
-        If you do not see any number, type <strong>0</strong>.
+        If you do not see any number, click the <strong>No Number</strong> button.
     </div>
+    
+    <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #e94560; text-align: left;">
+        <strong>⚠️ Disclaimer:</strong> This test is for informational and educational purposes only. 
+        It is not a medical diagnosis. If you have concerns about your color vision, please consult 
+        an eye care professional. Results may vary and should not be used for official medical determinations.
+    </div>
+    
     <div class="progress"><div class="bar" style="width: {{ pct }}%"></div></div>
     <p>Plate {{ idx }} of {{ total }}</p>
     <canvas id="canvas" width="500" height="500"></canvas>
     <form method="POST">
-        <input type="number" name="answer" placeholder="Enter number" required autofocus>
-        <button type="submit">Submit</button>
+        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px;">
+            <input type="number" name="answer" placeholder="Enter number" autofocus style="flex:1;">
+            <button type="submit" style="background: #e94560;">Submit</button>
+            <button type="submit" name="skip" value="skip" style="background: #6c757d;">No Number</button>
+        </div>
     </form>
     <script>
         const canvas = document.getElementById('canvas');
@@ -222,10 +231,37 @@ HTML = '''
         
         <div class="note">Note: Scores below 60% indicate a possible deficiency in that cone type.</div>
         
-        <form method="POST" action="/reset" style="margin-top: 30px;">
+        <div style="margin: 20px 0;">
+            <button onclick="exportToCSV()" style="background: #28a745; margin-right: 10px;">Export Results to CSV</button>
+        </div>
+        
+        <form method="POST" action="/reset" style="margin-top: 20px;">
             <button type="submit">Take Test Again</button>
         </form>
     </div>
+    <script>
+        function exportToCSV() {
+            const redScore = {{ red_score }};
+            const greenScore = {{ green_score }};
+            const blueScore = {{ blue_score }};
+            const diagnosis = "{{ diagnosis }}";
+            
+            const csvContent = "data:text/csv;charset=utf-8," 
+                + "Cone Type,Score (%)\\n"
+                + "Red," + redScore + "\\n"
+                + "Green," + greenScore + "\\n"
+                + "Blue," + blueScore + "\\n"
+                + "Diagnosis," + diagnosis;
+            
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "color_vision_results.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
     {% endif %}
 </body>
 </html>
@@ -258,11 +294,15 @@ def index():
         session.modified = True
     
     if request.method == 'POST':
-        ans = request.form.get('answer', '0')
-        try:
-            ans = int(ans)
-        except:
-            ans = 0
+        # Handle the "No Number" button or regular number input
+        if 'skip' in request.form:
+            user_number = 0
+        else:
+            ans = request.form.get('answer', '0')
+            try:
+                user_number = int(ans)
+            except:
+                user_number = 0
         
         step = session.get('step', 0)
         plates = session.get('plates', [])
@@ -270,7 +310,7 @@ def index():
         if step < len(plates):
             answers = session.get('answers', [])
             answers.append({
-                'user': ans,
+                'user': user_number,
                 'correct': plates[step]['num'],
                 'type': plates[step]['type']
             })
