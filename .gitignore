@@ -207,3 +207,4 @@ marimo/_lsp/
 __marimo__/
 mock-project/node_modules/
 mock-project/backend/test_results.json
+mock-project/test-results/
