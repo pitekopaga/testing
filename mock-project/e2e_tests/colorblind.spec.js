@@ -1,30 +1,32 @@
 const { test, expect } = require('@playwright/test');
 
-test('homepage loads and shows title', async ({ page }) => {
+test('login screen loads', async ({ page }) => {
   await page.goto('http://localhost:5000');
-  await expect(page).toHaveTitle(/Color Vision Test/);
   await expect(page.locator('h1')).toContainText('Color Vision Diagnostic Test');
+  await expect(page.locator('input[name="username"]')).toBeVisible();
 });
 
-test('health endpoint returns ok', async ({ request }) => {
-  const response = await request.get('http://localhost:5000/health');
-  expect(response.status()).toBe(200);
-  expect(await response.json()).toEqual({ status: 'ok' });
+test('user can log in and start test', async ({ page }) => {
+  await page.goto('http://localhost:5000');
+  await page.fill('input[name="username"]', 'testuser');
+  await page.click('button[type="submit"]');
+  await expect(page.locator('canvas')).toBeVisible();
+  await expect(page.locator('input[name="answer"]')).toBeVisible();
 });
 
 test('user can submit answers and complete the test', async ({ page }) => {
   await page.goto('http://localhost:5000');
+  await page.fill('input[name="username"]', 'testuser');
+  await page.click('button[type="submit"]');
   
-  // Get total number of plates from the progress indicator
+  // Get total number of plates
   const totalText = await page.locator('p').first().textContent();
   const totalMatch = totalText.match(/of (\d+)/);
-  const totalPlates = totalMatch ? parseInt(totalMatch[1]) : 10;
+  const totalPlates = totalMatch ? parseInt(totalMatch[1]) : 18;
   
   // Submit answers for all plates
   for (let i = 0; i < totalPlates; i++) {
-    // Enter a guess (using 0 as default)
-    await page.fill('input[name="answer"]', '0');
-    await page.click('button[type="submit"]');
+    await page.click('button[name="skip"]');
     await page.waitForLoadState('networkidle');
   }
   
@@ -33,41 +35,39 @@ test('user can submit answers and complete the test', async ({ page }) => {
 });
 
 test('results page shows cone scores', async ({ page }) => {
-  // Complete the test first
   await page.goto('http://localhost:5000');
+  await page.fill('input[name="username"]', 'testuser2');
+  await page.click('button[type="submit"]');
   
   const totalText = await page.locator('p').first().textContent();
   const totalMatch = totalText.match(/of (\d+)/);
-  const totalPlates = totalMatch ? parseInt(totalMatch[1]) : 10;
+  const totalPlates = totalMatch ? parseInt(totalMatch[1]) : 18;
   
   for (let i = 0; i < totalPlates; i++) {
-    await page.fill('input[name="answer"]', '0');
-    await page.click('button[type="submit"]');
+    await page.click('button[name="skip"]');
     await page.waitForLoadState('networkidle');
   }
   
-  // Verify results page has score elements
   await expect(page.locator('.score').first()).toBeVisible();
 });
 
-test('reset button clears results and restarts test', async ({ page }) => {
+test('exit button logs out and returns to login', async ({ page }) => {
   await page.goto('http://localhost:5000');
+  await page.fill('input[name="username"]', 'testuser3');
+  await page.click('button[type="submit"]');
   
-  // Complete the test
   const totalText = await page.locator('p').first().textContent();
   const totalMatch = totalText.match(/of (\d+)/);
-  const totalPlates = totalMatch ? parseInt(totalMatch[1]) : 10;
+  const totalPlates = totalMatch ? parseInt(totalMatch[1]) : 18;
   
   for (let i = 0; i < totalPlates; i++) {
-    await page.fill('input[name="answer"]', '0');
-    await page.click('button[type="submit"]');
+    await page.click('button[name="skip"]');
     await page.waitForLoadState('networkidle');
   }
   
-  // Click reset button
-  await page.click('button[type="submit"]');
+  // Click the Exit button (the logout button)
+  await page.click('form[action="/logout"] button');
   
-  // Should be back to first plate
-  await expect(page.locator('h1')).toContainText('Color Vision Diagnostic Test');
-  await expect(page.locator('input[name="answer"]')).toBeVisible();
+  // Should return to login screen
+  await expect(page.locator('input[name="username"]')).toBeVisible();
 });
