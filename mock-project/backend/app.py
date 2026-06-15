@@ -11,6 +11,33 @@ app.secret_key = 'your-secret-key-here'
 
 RESULTS_FILE = 'test_results.json'
 
+def save_survey(username, answers):
+    """Save anonymous survey response to CSV file."""
+    import csv
+    from datetime import datetime
+    
+    file_exists = os.path.isfile('survey_data.csv')
+    with open('survey_data.csv', 'a', newline='') as f:
+        writer = csv.writer(f)
+        if not file_exists:
+            writer.writerow([
+                'timestamp', 'username', 'prior_belief', 'taken_other_tests',
+                'confidence', 'accurate_cones', 'inaccurate_cones',
+                'too_high_cones', 'too_low_cones', 'comments'
+            ])
+        writer.writerow([
+            datetime.now().isoformat(),
+            username,
+            answers.get('prior_belief', ''),
+            answers.get('taken_other_tests', ''),
+            answers.get('confidence', ''),
+            ','.join(answers.getlist('accurate_cones')),
+            ','.join(answers.getlist('inaccurate_cones')),
+            ','.join(answers.getlist('too_high_cones')),
+            ','.join(answers.getlist('too_low_cones')),
+            answers.get('comments', '')
+        ])
+
 def save_result(username, diagnosis, scores):
     """Save a user's test result to a JSON file."""
     data = {}
@@ -257,6 +284,10 @@ HTML = '''
         </div>
         {% endif %}
         
+        <a href="/survey">
+            <button type="button" style="background: #6c757d; margin: 10px;">Help Improve Accuracy (Optional Survey)</button>
+        </a>
+
         <form method="POST" action="/reset" style="display: inline;">
             <button type="submit">Take Test Again</button>
         </form>
@@ -265,6 +296,99 @@ HTML = '''
         </form>
     </div>
     {% endif %}
+</body>
+</html>
+'''
+
+SURVEY_HTML = '''
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Help Improve Accuracy - Color Vision Test</title>
+    <style>
+        body { text-align: center; background: #1a1a2e; color: white; font-family: Arial; padding: 20px; }
+        .survey-container { background: #16213e; padding: 25px; border-radius: 20px; max-width: 600px; margin: 0 auto; text-align: left; }
+        h1 { color: #e94560; text-align: center; }
+        h3 { margin-top: 20px; margin-bottom: 10px; color: #e94560; }
+        label, input, select, textarea { margin: 5px 0; }
+        input[type="checkbox"] { margin-right: 10px; }
+        .checkbox-group { margin: 10px 0; }
+        button { background: #e94560; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px; margin-top: 20px; }
+        button:hover { background: #ff6b8a; }
+        .note { font-size: 12px; color: #888; margin-top: 20px; text-align: center; }
+        .skip { text-align: center; margin-top: 15px; }
+        .skip a { color: #888; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="survey-container">
+        <h1>Help Improve Accuracy</h1>
+        <p>Your answers to this optional survey will help me calibrate the test. No personal information is collected. Responses are anonymous.</p>
+        
+        <form method="POST">
+            <h3>Before this test, what did you believe your color vision to be?</h3>
+            <select name="prior_belief" required>
+                <option value="">-- Select an option --</option>
+                <option value="normal">Normal color vision</option>
+                <option value="protan">Protan (red deficient)</option>
+                <option value="deutan">Deutan (green deficient)</option>
+                <option value="tritan">Tritan (blue deficient)</option>
+                <option value="unsure">Unsure</option>
+            </select>
+            
+            <h3>Have you taken other colorblindness tests before?</h3>
+            <input type="radio" name="taken_other_tests" value="yes"> Yes
+            <input type="radio" name="taken_other_tests" value="no"> No
+            
+            <h3>How confident are you in the accuracy of this test's results?</h3>
+            <select name="confidence" required>
+                <option value="">-- Select an option --</option>
+                <option value="1">1 - Not confident</option>
+                <option value="2">2 - Slightly confident</option>
+                <option value="3">3 - Moderately confident</option>
+                <option value="4">4 - Very confident</option>
+                <option value="5">5 - Extremely confident</option>
+            </select>
+            
+            <h3>Which cone scores seemed accurate? (check all that apply)</h3>
+            <div class="checkbox-group">
+                <input type="checkbox" name="accurate_cones" value="red"> Red (Protan)<br>
+                <input type="checkbox" name="accurate_cones" value="green"> Green (Deutan)<br>
+                <input type="checkbox" name="accurate_cones" value="blue"> Blue (Tritan)<br>
+            </div>
+            
+            <h3>Which cone scores seemed inaccurate? (check all that apply)</h3>
+            <div class="checkbox-group">
+                <input type="checkbox" name="inaccurate_cones" value="red"> Red<br>
+                <input type="checkbox" name="inaccurate_cones" value="green"> Green<br>
+                <input type="checkbox" name="inaccurate_cones" value="blue"> Blue<br>
+            </div>
+            
+            <h3>Which cone scores seemed too high?</h3>
+            <div class="checkbox-group">
+                <input type="checkbox" name="too_high_cones" value="red"> Red<br>
+                <input type="checkbox" name="too_high_cones" value="green"> Green<br>
+                <input type="checkbox" name="too_high_cones" value="blue"> Blue<br>
+            </div>
+            
+            <h3>Which cone scores seemed too low?</h3>
+            <div class="checkbox-group">
+                <input type="checkbox" name="too_low_cones" value="red"> Red<br>
+                <input type="checkbox" name="too_low_cones" value="green"> Green<br>
+                <input type="checkbox" name="too_low_cones" value="blue"> Blue<br>
+            </div>
+            
+            <h3>Other comments (optional)</h3>
+            <textarea name="comments" rows="4" cols="50" style="width: 100%;"></textarea>
+            
+            <button type="submit">Submit Survey</button>
+        </form>
+        
+        <div class="skip">
+            <a href="/result">Skip and return to results</a>
+        </div>
+        <div class="note">Your responses are anonymous and will only be used to improve test accuracy.</div>
+    </div>
 </body>
 </html>
 '''
@@ -438,6 +562,18 @@ def result():
         diagnosis=diagnosis,
         description=description,
         consistency=consistency)
+
+@app.route('/survey', methods=['GET', 'POST'])
+def survey():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        save_survey(session['username'], request.form)
+        return redirect(url_for('result'))
+    
+    # GET request - show the survey form
+    return render_template_string(SURVEY_HTML)
 
 @app.route('/export-csv')
 def export_csv():
