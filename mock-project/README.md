@@ -57,6 +57,24 @@ After taking the test multiple times with the same name, the results page will s
 
 Click the "Export All Results to CSV" button on the results page to download a file containing your complete test history with timestamps.
 
+## Optional Survey
+
+After viewing your results, you can click "Help Improve Accuracy (Optional Survey)" to provide feedback. The survey asks about your prior beliefs, confidence in the results, and which cone scores seemed accurate or inaccurate.
+
+To retrieve survey responses (stored inside the Docker container):
+
+```bash
+docker compose cp api:/app/survey_data.csv backend/survey_data.csv
+```
+
+The CSV file will be saved to `backend/survey_data.csv`. Each row includes:
+- Timestamp
+- Username
+- Test diagnosis and cone scores
+- Survey answers (prior belief, confidence, accuracy feedback, etc.)
+
+Use this data to analyze calibration accuracy and improve the test.
+
 ## Exiting and Switching Users
 
 Click the "Exit" button to log out. The next person who uses the browser will be asked to enter their name before starting a new test.

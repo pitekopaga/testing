@@ -11,30 +11,46 @@ app.secret_key = 'your-secret-key-here'
 
 RESULTS_FILE = 'test_results.json'
 
-def save_survey(username, answers):
-    """Save anonymous survey response to CSV file."""
+def save_survey(username, answers, test_results):
+    """Save survey response linked to test results."""
     import csv
     from datetime import datetime
+    
+    # Handle checkbox lists properly
+    accurate_cones = answers.getlist('accurate_cones') if hasattr(answers, 'getlist') else answers.get('accurate_cones', '').split(',')
+    inaccurate_cones = answers.getlist('inaccurate_cones') if hasattr(answers, 'getlist') else answers.get('inaccurate_cones', '').split(',')
+    too_high_cones = answers.getlist('too_high_cones') if hasattr(answers, 'getlist') else answers.get('too_high_cones', '').split(',')
+    too_low_cones = answers.getlist('too_low_cones') if hasattr(answers, 'getlist') else answers.get('too_low_cones', '').split(',')
+    
+    # Convert lists to strings
+    accurate_str = ','.join(accurate_cones) if accurate_cones else ''
+    inaccurate_str = ','.join(inaccurate_cones) if inaccurate_cones else ''
+    too_high_str = ','.join(too_high_cones) if too_high_cones else ''
+    too_low_str = ','.join(too_low_cones) if too_low_cones else ''
     
     file_exists = os.path.isfile('survey_data.csv')
     with open('survey_data.csv', 'a', newline='') as f:
         writer = csv.writer(f)
         if not file_exists:
             writer.writerow([
-                'timestamp', 'username', 'prior_belief', 'taken_other_tests',
-                'confidence', 'accurate_cones', 'inaccurate_cones',
-                'too_high_cones', 'too_low_cones', 'comments'
+                'timestamp', 'username', 'diagnosis', 'red_score', 'green_score', 'blue_score',
+                'prior_belief', 'taken_other_tests', 'confidence', 
+                'accurate_cones', 'inaccurate_cones', 'too_high_cones', 'too_low_cones', 'comments'
             ])
         writer.writerow([
             datetime.now().isoformat(),
             username,
+            test_results.get('diagnosis', ''),
+            test_results.get('red_score', ''),
+            test_results.get('green_score', ''),
+            test_results.get('blue_score', ''),
             answers.get('prior_belief', ''),
             answers.get('taken_other_tests', ''),
             answers.get('confidence', ''),
-            ','.join(answers.getlist('accurate_cones')),
-            ','.join(answers.getlist('inaccurate_cones')),
-            ','.join(answers.getlist('too_high_cones')),
-            ','.join(answers.getlist('too_low_cones')),
+            accurate_str,
+            inaccurate_str,
+            too_high_str,
+            too_low_str,
             answers.get('comments', '')
         ])
 
@@ -324,7 +340,8 @@ SURVEY_HTML = '''
     <div class="survey-container">
         <h1>Help Improve Accuracy</h1>
         <p>Your answers to this optional survey will help me calibrate the test. No personal information is collected. Responses are anonymous.</p>
-        
+        <p><strong>Your survey responses will be linked to your test results for this session.</strong></p>
+
         <form method="POST">
             <h3>Before this test, what did you believe your color vision to be?</h3>
             <select name="prior_belief" required>
@@ -568,8 +585,13 @@ def survey():
     if 'username' not in session:
         return redirect(url_for('login'))
     
+    # Get the most recent test results for this user
+    username = session['username']
+    results = get_all_results(username)
+    latest_result = results[-1] if results else {}
+    
     if request.method == 'POST':
-        save_survey(session['username'], request.form)
+        save_survey(username, request.form, latest_result)
         return redirect(url_for('result'))
     
     # GET request - show the survey form
