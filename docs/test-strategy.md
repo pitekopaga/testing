@@ -1,18 +1,35 @@
-# Test Strategy
+# Test Strategy - Color Vision Diagnostic Test
 
 ## Area Under Test
-A function that takes two hex color codes and returns whether they are distinguishable for someone with red-green colorblindness.
+
+A web-based Ishihara-style color vision test that diagnoses Protan, Deutan, and Tritan color blindness. The application includes user login, persistent result history, consistency scoring, CSV export, and an optional survey for accuracy feedback.
 
 ## Test Approach
-Black-box unit testing. The function will be tested without knowledge of its internal implementation.
+
+- **Unit Testing**: Pattern generation logic and scoring algorithm (pytest)
+- **Integration Testing**: API health endpoint and form submission flow (pytest)
+- **E2E Testing**: Full user flow including login, test completion, results display, and logout (Playwright)
+- **Load Testing**: Concurrent user simulation (Locust)
+- **Manual Testing**: Cross-browser validation, accessibility, and diagnostic accuracy verification
 
 ## Tools
-- pytest for test execution
+
+- pytest for unit and integration tests
+- Playwright for E2E browser tests
+- Locust for load testing
 - Docker for environment isolation
+- GitHub Actions for CI/CD
 
 ## Quality Metrics
-- Test pass/fail rate
-- Coverage of valid inputs, invalid inputs, and edge cases
 
-## Risks
-The function is simplified and does not implement true perceptual distance. Tests may pass but not reflect real-world colorblindness.
+- Unit test pass rate
+- E2E test pass rate
+- Load test success rate
+- User consistency score (across multiple sessions)
+- Survey feedback on diagnostic accuracy
+
+## Test Environment
+
+- Docker container with Python 3.11
+- Browser: Chromium (headless for CI, headed for manual)
+- CI: GitHub Actions (Ubuntu latest)

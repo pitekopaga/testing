@@ -1,26 +1,57 @@
-# Test Report
+# Test Report - Color Vision Diagnostic Test
 
-## AI-Generated Tests
-I asked an AI to generate pytest unit tests for the colorblindness function. The AI produced tests for red vs green, red vs blue, identical colors, and case sensitivity.
+## Test Environment
 
-## Validation Results
-- Red vs green: PASS
-- Red vs blue: PASS
-- Identical colors: PASS
-- Case insensitivity: PASS
-- Invalid hex format: PLACEHOLDER
+- **Local:** Docker Compose on Ubuntu
+- **CI:** GitHub Actions (Ubuntu latest)
+- **Browser:** Chromium (headless for CI)
+- **Test Framework:** pytest, Playwright, Locust
 
-## What I Changed
-The AI assumed the function would validate hex format. It does not. I left that test as a placeholder to document the gap.
+## Automated Test Results
 
-## What I Added
-I added tests for green vs green and case insensitivity. The AI missed those.
+| Test Type | Tests | Passed | Failed |
+|-----------|-------|--------|--------|
+| Unit Tests | 3 | 3 | 0 |
+| Integration Tests | 1 | 1 | 0 |
+| E2E Tests | 5 | 5 | 0 |
+| Load Tests | 1 scenario | 0 failures | 0 |
 
-## Assessment
-AI-generated tests are a good starting point but miss edge cases and assume functionality that may not exist. Human review is essential.
+### Unit Tests (3 passed)
+- `test_result_page_returns_200`: PASS
+- `test_health_endpoint_returns_ok`: PASS
+- `test_debug_stats_endpoint_returns_stats`: PASS
 
-## Peer Feedback and Future Improvements
-A peer reviewer noted that the current function only handles exact hex matches and does not distinguish between similar shades. He suggested moving to a numerical approach like RGB distance or perceptual color spaces such as LAB. I agree with this feedback. For Assignment 2, I kept the mock simple per the reading's guidance to hardcode responses. In a future iteration, I would implement perceptual distance calculations to handle similar colors and expand the function to cover additional types of colorblindness beyond red-green.
+### Integration Tests (1 passed)
+- `test_health_endpoint`: PASS
 
-## Professor Feedback
-Professor Ong noted that industry best practices for colorblindness include being "color-agnostic" and using differentiating patterns, not just color. I agree. My current function only compares hex codes. A future version would also check for or recommend patterns, icons, or labels to ensure accessibility even when colors are indistinguishable.
+### E2E Tests (5 passed)
+- Login screen loads: PASS
+- User can log in and start test: PASS
+- User can complete all plates: PASS
+- Results page shows cone scores: PASS
+- Exit button logs out: PASS
+
+### Load Tests
+- 5 concurrent users, 30 seconds
+- 0 failures
+- Average response time: ~10ms
+
+## Manual Test Results
+
+| Test Case | Status | Notes |
+|-----------|--------|-------|
+| Chrome (latest) | PASS | Full functionality verified |
+| Firefox (latest) | PASS | Full functionality verified |
+| Cross-browser Canvas rendering | PASS | Consistent across browsers |
+| Keyboard navigation | PASS | Tab and Enter supported |
+| Diagnostic accuracy | Pending | Requires user validation |
+
+## AI Generation Notes
+
+E2E tests were initially AI-generated and then manually refined to handle the login flow and "No Number" button. Unit tests for scoring were written manually to ensure coverage of the diagnostic logic.
+
+## Limitations
+
+- Diagnostic accuracy requires manual validation against clinical tests
+- Load test is minimal (5 users) due to Flask development server constraints
+- Accessibility testing is manual and limited to keyboard navigation
